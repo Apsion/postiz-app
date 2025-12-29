@@ -28,6 +28,7 @@ services:
       - dokploy-network  # External network for Traefik routing
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.postiz.rule=Host(`postiz.apsion.com`)"
       - "traefik.http.routers.postiz.entrypoints=websecure"
       - "traefik.http.routers.postiz.tls.certResolver=letsencrypt"
