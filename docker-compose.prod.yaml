@@ -25,7 +25,8 @@ services:
       postiz-redis:
         condition: service_healthy
     networks:
-      - postiz-network
+      - postiz-network  # Internal network for postgres/redis communication
+      - dokploy-network  # External network for Traefik routing
     healthcheck:
       test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/']
       interval: 30s
@@ -81,3 +82,5 @@ volumes:
 networks:
   postiz-network:
     driver: bridge
+  dokploy-network:
+    external: true  # Managed by Dokploy - contains Traefik

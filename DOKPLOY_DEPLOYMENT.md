@@ -523,6 +523,26 @@ In Dokploy:
 5. Do NOT select `postiz-postgres` or `postiz-redis` - those are internal services
 6. If dropdown is empty, the compose deployment hasn't started yet - deploy first, then add domain
 
+#### Error: "404 Not Found" even though services are running
+
+**Symptom**: PM2 shows all processes running, but domain returns 404
+
+**Solution**: The container isn't on `dokploy-network`, so Traefik can't reach it.
+1. Check `docker-compose.prod.yaml` has:
+   ```yaml
+   services:
+     postiz-app:
+       networks:
+         - postiz-network
+         - dokploy-network  # <-- REQUIRED for Traefik routing
+
+   networks:
+     dokploy-network:
+       external: true  # <-- REQUIRED
+   ```
+2. If missing, update docker-compose and redeploy
+3. This is already fixed in the latest version of `docker-compose.prod.yaml`
+
 #### Error: "Domain shows 404 or 502"
 
 **Symptom**: https://postiz.apsion.com returns error
