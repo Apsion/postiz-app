@@ -10,8 +10,8 @@ services:
       args:
         NEXT_PUBLIC_VERSION: '1.0.0'
     restart: unless-stopped
-    ports:
-      - '5000:5000'  # Nginx reverse proxy (Traefik will route to this)
+    expose:
+      - "5000"
     environment:
       # Environment variables are configured in Dokploy's env editor
       # See .env.production.template for required variables
@@ -28,7 +28,6 @@ services:
       - dokploy-network  # External network for Traefik routing
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.postiz.rule=Host(`postiz.apsion.com`)"
       - "traefik.http.routers.postiz.entrypoints=websecure"
       - "traefik.http.routers.postiz.tls.certResolver=letsencrypt"
