@@ -1,0 +1,19 @@
+name: SonarQube
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarqube:
+    uses: Apsion/.github/.github/workflows/org-sonarqube.yml@main
+    with:
+      project_type: typescript
+      package_manager: pnpm
+      node_version: '22'
+      run_tests: true
+      test_command: 'pnpm test'
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
