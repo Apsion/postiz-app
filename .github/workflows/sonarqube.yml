@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   sonarqube:
@@ -14,6 +19,4 @@ jobs:
       node_version: '22'
       run_tests: true
       test_command: 'pnpm test'
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    secrets: inherit
