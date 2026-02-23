@@ -35,7 +35,7 @@ services:
       dokploy-network:
         priority: 100         # Overlay — available after Dokploy starts
     healthcheck:
-      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/']
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:5000/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
