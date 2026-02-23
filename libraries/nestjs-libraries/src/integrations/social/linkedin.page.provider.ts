@@ -25,15 +25,7 @@ export class LinkedinPageProvider
   override isBetweenSteps = true;
   override refreshWait = true;
   override maxConcurrentJob = 2; // LinkedIn Page has professional posting limits
-  override scopes = [
-    'openid',
-    'profile',
-    'w_member_social',
-    'r_basicprofile',
-    'rw_organization_admin',
-    'w_organization_social',
-    'r_organization_social',
-  ];
+  override scopes = ['openid', 'profile', 'w_member_social', 'email'];
 
   override editor = 'normal' as const;
 
