@@ -16,6 +16,7 @@ services:
       # Environment variables are configured in Dokploy's env editor
       # See .env.production.template for required variables
       - NODE_ENV=production
+      - DISABLE_REGISTRATION=true
     volumes:
       - uploads:/uploads  # Local file storage (optional if using Cloudflare R2)
     depends_on:
@@ -24,14 +25,10 @@ services:
       postiz-redis:
         condition: service_healthy
     networks:
-      - postiz-network  # Internal network for postgres/redis communication
-      - dokploy-network  # External network for Traefik routing
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.postiz.rule=Host(`postiz.apsion.com`)"
-      - "traefik.http.routers.postiz.entrypoints=websecure"
-      - "traefik.http.routers.postiz.tls.certResolver=letsencrypt"
-      - "traefik.http.services.postiz.loadbalancer.server.port=5000"
+      postiz-network:
+        priority: 1000        # Bridge — always available on reboot
+      dokploy-network:
+        priority: 100         # Overlay — available after Dokploy starts
     healthcheck:
       test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/']
       interval: 30s
@@ -86,4 +83,4 @@ networks:
   postiz-network:
     driver: bridge
   dokploy-network:
-    external: true  # Managed by Dokploy - contains Traefik
+    external: true
