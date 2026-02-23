@@ -17,6 +17,7 @@ services:
       # See .env.production.template for required variables
       - NODE_ENV=production
       - DISABLE_REGISTRATION=true
+      - TEMPORAL_ADDRESS=temporal:7233
     volumes:
       - uploads:/uploads  # Local file storage (optional if using Cloudflare R2)
     depends_on:
@@ -24,9 +25,13 @@ services:
         condition: service_healthy
       postiz-redis:
         condition: service_healthy
+      temporal:
+        condition: service_started
     networks:
       postiz-network:
         priority: 1000        # Bridge — always available on reboot
+      temporal-network:
+        priority: 500         # Temporal gRPC communication
       dokploy-network:
         priority: 100         # Overlay — available after Dokploy starts
     healthcheck:
@@ -71,6 +76,91 @@ services:
       start_period: 5s
     # No exposed ports - internal only
 
+  # -----------------------
+  # Temporal Stack
+  # -----------------------
+  temporal-elasticsearch:
+    image: elasticsearch:7.17.27
+    restart: unless-stopped
+    environment:
+      - cluster.routing.allocation.disk.threshold_enabled=true
+      - cluster.routing.allocation.disk.watermark.low=512mb
+      - cluster.routing.allocation.disk.watermark.high=256mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - xpack.security.enabled=false
+    networks:
+      - temporal-network
+    expose:
+      - 9200
+    volumes:
+      - temporal-elasticsearch-data:/usr/share/elasticsearch/data
+
+  temporal-postgresql:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    networks:
+      - temporal-network
+    expose:
+      - 5432
+    volumes:
+      - temporal-postgres-data:/var/lib/postgresql/data
+
+  temporal:
+    image: temporalio/auto-setup:1.28.1
+    restart: unless-stopped
+    depends_on:
+      - temporal-postgresql
+      - temporal-elasticsearch
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      - ENABLE_ES=true
+      - ES_SEEDS=temporal-elasticsearch
+      - ES_VERSION=v7
+      - TEMPORAL_NAMESPACE=default
+    networks:
+      - temporal-network
+    expose:
+      - 7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+  temporal-admin-tools:
+    image: temporalio/admin-tools:1.28.1-tctl-1.18.4-cli-1.4.1
+    restart: unless-stopped
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    networks:
+      - temporal-network
+    depends_on:
+      - temporal
+    stdin_open: true
+    tty: true
+
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    restart: unless-stopped
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://127.0.0.1:3000
+    networks:
+      - temporal-network
+    expose:
+      - 8080
+    # Uncomment to access Temporal UI from host:
+    # ports:
+    #   - '8080:8080'
+
 volumes:
   postgres-data:
     driver: local
@@ -78,9 +168,15 @@ volumes:
     driver: local
   uploads:
     driver: local
+  temporal-postgres-data:
+    driver: local
+  temporal-elasticsearch-data:
+    driver: local
 
 networks:
   postiz-network:
+    driver: bridge
+  temporal-network:
     driver: bridge
   dokploy-network:
     external: true
