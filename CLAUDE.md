@@ -234,3 +234,9 @@ const useCommunity = () => ({
 - **Multi-tenant**: All data scoped to Organization — always include orgId
 - **Path aliases**: Always `@gitroom/*`, never relative paths across apps/libraries
 - **`strictNullChecks: false`**: Be careful with null/undefined — TypeScript won't catch these
+
+## Documentation
+
+- Main docs: https://docs.postiz.com/
+- Developer guide: https://docs.postiz.com/developer-guide
+- Public API: https://docs.postiz.com/public-api
