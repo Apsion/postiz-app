@@ -1,8 +1,9 @@
+'use client';
+
 import { FC, useCallback, useMemo, useState } from 'react';
 import { ReactTags } from 'react-tag-autocomplete';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import useSWR from 'swr';
-import { TopTitle } from '@gitroom/frontend/components/launches/helpers/top.title.component';
 import { Input } from '@gitroom/react/form/input';
 import { ColorPicker } from '@gitroom/react/form/color.picker';
 import { Button } from '@gitroom/react/form/button';
@@ -11,7 +12,12 @@ import { useT } from '@gitroom/react/translation/get.transation.service.client';
 import { useClickOutside } from '@mantine/hooks';
 import clsx from 'clsx';
 import { useModals } from '@gitroom/frontend/components/layout/new-modal';
-import { TagIcon, DropdownArrowIcon, PlusIcon, CheckmarkIcon } from '@gitroom/frontend/components/ui/icons';
+import {
+  TagIcon,
+  DropdownArrowIcon,
+  PlusIcon,
+  CheckmarkIcon,
+} from '@gitroom/frontend/components/ui/icons';
 
 export const TagsComponent: FC<{
   name: string;
@@ -53,7 +59,9 @@ export const TagsComponentInner: FC<{
   }) => void;
 }> = ({ initial, onChange, name, mutate, allTags: data }) => {
   const t = useT();
+  const fetch = useFetch();
   const [isOpen, setIsOpen] = useState(false);
+  const [allowClose, setAllowClose] = useState(true);
   const [tagValue, setTagValue] = useState<any[]>(
     (initial?.slice(0) || []).map((p: any) => {
       return data?.tags.find((a: any) => a.name === p.value) || p;
@@ -62,7 +70,7 @@ export const TagsComponentInner: FC<{
   const modals = useModals();
 
   const ref = useClickOutside(() => {
-    if (!isOpen) {
+    if (!isOpen || !allowClose) {
       return;
     }
     setIsOpen(false);
@@ -71,7 +79,7 @@ export const TagsComponentInner: FC<{
   const addTag = useCallback(async () => {
     const val: string | undefined = await new Promise((resolve) => {
       modals.openModal({
-        title: 'Add new tag',
+        title: t('add_new_tag', 'Add New Tag'),
         children: (close) => (
           <ShowModal tag="" close={close} resolve={resolve} />
         ),
@@ -97,6 +105,58 @@ export const TagsComponentInner: FC<{
     }
   }, []);
 
+  const deleteTag = useCallback(
+    async (tag: any, e: React.MouseEvent) => {
+      setAllowClose(false);
+      e.stopPropagation();
+      const confirmed: boolean = await new Promise((resolve) => {
+        modals.openModal({
+          title: t('delete_tag', 'Delete Tag'),
+          children: (close) => (
+            <ConfirmDeleteModal
+              tagName={tag.name}
+              close={close}
+              resolve={resolve}
+            />
+          ),
+        });
+      });
+
+      if (!confirmed) {
+        setTimeout(() => {
+          setAllowClose(true);
+        }, 500);
+        return;
+      }
+
+      await fetch(`/posts/tags/${tag.id}`, {
+        method: 'DELETE',
+      });
+
+      // Remove the tag from current selection if it was selected
+      const modify = tagValue.filter((a) => a.id !== tag.id);
+      if (modify.length !== tagValue.length) {
+        setTagValue(modify);
+        onChange({
+          target: {
+            value: modify.map((p: any) => ({
+              label: p.name,
+              value: p.name,
+            })),
+            name,
+          },
+        });
+      }
+
+      await mutate();
+
+      setTimeout(() => {
+        setAllowClose(true);
+      }, 500);
+    },
+    [tagValue, name, onChange, mutate, fetch, modals, t]
+  );
+
   return (
     <div
       ref={ref}
@@ -114,14 +174,14 @@ export const TagsComponentInner: FC<{
         </div>
         <div className="cursor-pointer flex gap-[4px]">
           {tagValue.length === 0 ? (
-            'Add New Tag'
+            t('add_new_tag', 'Add New Tag')
           ) : (
             <>
               <div
                 className="h-full flex justify-center items-center px-[8px] rounded-[4px]"
                 style={{ backgroundColor: tagValue[0].color }}
               >
-                <span className="mix-blend-difference text-[#fff]">
+                <span className="text-shadow-tags text-[#fff]">
                   {tagValue[0].name}
                 </span>
               </div>
@@ -134,7 +194,7 @@ export const TagsComponentInner: FC<{
         </div>
       </div>
       {isOpen && (
-        <div className="z-[300] absolute left-0 bottom-[100%] w-[240px] bg-newBgColorInner p-[12px] menu-shadow -translate-y-[10px] flex flex-col">
+        <div className="z-[300] absolute start-0 bottom-[100%] w-[240px] bg-newBgColorInner p-[12px] menu-shadow -translate-y-[10px] flex flex-col">
           {(data?.tags || []).map((p: any) => (
             <div
               onClick={() => {
@@ -157,20 +217,28 @@ export const TagsComponentInner: FC<{
                 });
               }}
               key={p.name}
-              className="h-[40px] py-[8px] px-[20px] -mx-[12px] flex gap-[8px]"
+              className="min-h-[40px] py-[8px] px-[20px] -mx-[12px] flex gap-[8px] items-center group"
             >
               <Check
                 onChange={() => {}}
                 value={!!tagValue.find((a) => a.id === p.id)}
               />
-              <div
-                className="h-full flex justify-center items-center px-[8px] rounded-[8px]"
-                style={{ backgroundColor: p.color }}
-              >
-                <span className="mix-blend-difference text-[#fff]">
+              <div className="h-full flex items-center flex-1 break-all">
+                <span
+                  className="text-[#fff] px-[8px] rounded-[8px] text-shadow-tags"
+                  style={{ backgroundColor: p.color }}
+                >
                   {p.name}
                 </span>
               </div>
+              {!tagValue.find((a) => a.id === p.id) && (
+                <div
+                  onClick={(e) => deleteTag(p, e)}
+                  className="ms-auto transition-opacity cursor-pointer text-red-500 text-[14px] font-[600]"
+                >
+                  ×
+                </div>
+              )}
             </div>
           ))}
           <div
@@ -180,7 +248,9 @@ export const TagsComponentInner: FC<{
             <div>
               <PlusIcon />
             </div>
-            <div className="text-[13px] font-[600]">Add New Tag</div>
+            <div className="text-[13px] font-[600]">
+              {t('add_new_tag', 'Add New Tag')}
+            </div>
           </div>
         </div>
       )}
@@ -196,7 +266,7 @@ const Check: FC<{ value: boolean; onChange: (value: boolean) => void }> = ({
     <div
       onClick={() => onChange(!value)}
       className={clsx(
-        'text-[10px] font-[500] text-center flex border border-btnSimple rounded-[6px] w-[20px] h-[20px] justify-center items-center',
+        'text-[10px] font-[500] text-center flex border border-btnSimple rounded-[6px] min-w-[20px] min-h-[20px] w-[20px] h-[20px] justify-center items-center',
         value && 'bg-[#612BD3]'
       )}
     >
@@ -402,6 +472,45 @@ export const TagsComponentA: FC<{
     </>
   );
 };
+const ConfirmDeleteModal: FC<{
+  tagName: string;
+  close: () => void;
+  resolve: (value: boolean) => void;
+}> = ({ tagName, close, resolve }) => {
+  const t = useT();
+
+  return (
+    <div className="flex flex-col gap-[16px]">
+      <p className="text-[14px]">
+        {t(
+          'confirm_delete_tag',
+          'Are you sure you want to delete the tag "{{tagName}}"?',
+          { tagName }
+        )}
+      </p>
+      <div className="flex gap-[8px] justify-end">
+        <Button
+          onClick={() => {
+            resolve(false);
+            close();
+          }}
+        >
+          {t('cancel', 'Cancel')}
+        </Button>
+        <Button
+          onClick={() => {
+            resolve(true);
+            close();
+          }}
+          className="bg-red-500 hover:bg-red-600"
+        >
+          {t('delete', 'Delete')}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const ShowModal: FC<{
   tag: string;
   color?: string;
@@ -431,13 +540,13 @@ const ShowModal: FC<{
       <Input
         name="name"
         disableForm={true}
-        label="Name"
+        label={t('tag_name', 'Name')}
         value={tagName}
         onChange={(e) => setTagName(e.target.value)}
       />
       <ColorPicker
         onChange={(e) => setColor(e.target.value)}
-        label="Tag Color"
+        label={t('label_tag_color', 'Tag Color')}
         name="color"
         value={color}
         enabled={true}

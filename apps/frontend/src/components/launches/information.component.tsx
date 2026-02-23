@@ -1,9 +1,12 @@
+'use client';
+
 import React, { FC, Fragment, useMemo } from 'react';
 import { useLaunchStore } from '@gitroom/frontend/components/new-launch/store';
 import { useShallow } from 'zustand/react/shallow';
 import clsx from 'clsx';
 import Image from 'next/image';
 import { capitalize } from 'lodash';
+import { useT } from '@gitroom/react/translation/get.transation.service.client';
 
 const Valid: FC = () => {
   return (
@@ -57,6 +60,7 @@ export const InformationComponent: FC<{
   totalAllowedChars: number;
   isPicture: boolean;
 }> = ({ totalChars, totalAllowedChars, chars, isPicture }) => {
+  const t = useT();
   const { isGlobal, selectedIntegrations, internal } = useLaunchStore(
     useShallow((state) => ({
       isGlobal: state.current === 'global',
@@ -106,6 +110,31 @@ export const InformationComponent: FC<{
     return true;
   }, [totalAllowedChars, totalChars, isInternal, isPicture, chars]);
 
+  const globalDisplayLimit = useMemo(() => {
+    if (!isGlobal || !selectedIntegrations.length) {
+      return null;
+    }
+
+    // Get all limits from non-internal integrations, sorted ascending
+    const limits = selectedIntegrations
+      .map((p, index) => ({
+        limit: chars?.[p.integration.id] || 0,
+        isInternal: isInternal[index],
+      }))
+      .filter((item) => !item.isInternal && item.limit > 0)
+      .map((item) => item.limit)
+      .sort((a, b) => a - b);
+
+    if (!limits.length) {
+      return null;
+    }
+
+    // Find the smallest limit that hasn't been exceeded yet
+    // If all are exceeded, show the smallest one
+    const validLimit = limits.find((limit) => totalChars <= limit);
+    return validLimit ?? limits[0];
+  }, [isGlobal, selectedIntegrations, chars, isInternal, totalChars]);
+
   return (
     <div
       className={clsx(
@@ -118,6 +147,11 @@ export const InformationComponent: FC<{
       {!isGlobal && (
         <div className={clsx("text-[10px] font-[600] flex justify-center items-center", !isValid && 'text-white')}>
           {totalChars}/{totalAllowedChars}
+        </div>
+      )}
+      {isGlobal && globalDisplayLimit !== null && (
+        <div className={clsx("text-[10px] font-[600] flex justify-center items-center", !isValid && 'text-white')}>
+          {totalChars}/{globalDisplayLimit}
         </div>
       )}
       {((isGlobal && selectedIntegrations.length) || !isValid) && (
@@ -149,9 +183,7 @@ export const InformationComponent: FC<{
                 isGlobal && selectedIntegrations.length && 'mb-[12px]'
               )}
             >
-              Your post should have at least
-              <br />
-              one character or one image.
+              {t('your_post_should_have_at_least_one_character_or_one_image', 'Your post should have at least one character or one image.')}
             </div>
           )}
           {isGlobal && (
@@ -191,7 +223,7 @@ export const InformationComponent: FC<{
                     )}
                   >
                     {isInternal?.[index]
-                      ? 'Internal Edit'
+                      ? t('internal_edit', 'Internal Edit')
                       : `${totalChars}/${chars?.[p.integration.id] || 0}`}
                   </div>
                 </Fragment>
