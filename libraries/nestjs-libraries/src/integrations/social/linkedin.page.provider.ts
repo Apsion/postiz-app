@@ -172,6 +172,10 @@ export class LinkedinPageProvider
 
   async fetchPageInformation(accessToken: string, params: { page: string }) {
     const pageId = params.page;
+    // Validate pageId to prevent path traversal / SSRF
+    if (!/^[a-zA-Z0-9_-]+$/.test(pageId)) {
+      throw new Error('Invalid LinkedIn page ID');
+    }
     const data = await (
       await fetch(
         `https://api.linkedin.com/v2/organizations/${pageId}?projection=(id,localizedName,vanityName,logoV2(original~:playableStreams))`,

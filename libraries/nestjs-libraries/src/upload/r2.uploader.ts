@@ -128,8 +128,8 @@ export async function prepareUploadParts(req: Request, res: Response) {
       // @ts-ignore
       response.presignedUrls[part.number] = url;
     } catch (err) {
-      console.log('Error', err);
-      return res.status(500).json(err);
+      console.error('Error preparing upload parts:', err);
+      return res.status(500).json({ error: 'Failed to prepare upload parts' });
     }
   }
 
@@ -150,8 +150,8 @@ export async function listParts(req: Request, res: Response) {
 
     return res.status(200).json(response['Parts']);
   } catch (err) {
-    console.log('Error', err);
-    return res.status(500).json(err);
+    console.error('Error listing parts:', err);
+    return res.status(500).json({ error: 'Failed to list parts' });
   }
 }
 
@@ -179,8 +179,8 @@ export async function completeMultipartUpload(req: Request, res: Response) {
       response?.Location?.split('/').at(-1);
     return response;
   } catch (err) {
-    console.log('Error', err);
-    return res.status(500).json(err);
+    console.error('Error completing multipart upload:', err);
+    return res.status(500).json({ error: 'Failed to complete multipart upload' });
   }
 }
 
@@ -198,8 +198,8 @@ export async function abortMultipartUpload(req: Request, res: Response) {
 
     return res.status(200).json(response);
   } catch (err) {
-    console.log('Error', err);
-    return res.status(500).json(err);
+    console.error('Error aborting multipart upload:', err);
+    return res.status(500).json({ error: 'Failed to abort multipart upload' });
   }
 }
 

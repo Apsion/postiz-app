@@ -46,6 +46,49 @@ function safeStringify(obj: any) {
   });
 }
 
+/**
+ * Validates that a URL uses an allowed protocol (http/https) and does not
+ * target private/internal network addresses (SSRF protection).
+ */
+function isAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    const hostname = parsed.hostname.toLowerCase();
+    // Block private/internal addresses
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '0.0.0.0' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('172.') ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname === 'metadata.google.internal' ||
+      hostname === '169.254.169.254'
+    ) {
+      // Allow 172.16-31.x.x (private range)
+      if (hostname.startsWith('172.')) {
+        const secondOctet = parseInt(hostname.split('.')[1], 10);
+        if (secondOctet >= 16 && secondOctet <= 31) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export { isAllowedUrl };
+
 export abstract class SocialAbstract {
   abstract identifier: string;
   maxConcurrentJob = 1;
@@ -104,6 +147,9 @@ export abstract class SocialAbstract {
     totalRetries = 0,
     ignoreConcurrency = false
   ): Promise<Response> {
+    if (!isAllowedUrl(url)) {
+      throw new BadBody(identifier, '{}', options.body || '{}', 'Invalid or disallowed URL');
+    }
     const request = await fetch(url, options);
 
     if (request.status === 200 || request.status === 201) {

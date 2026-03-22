@@ -4,6 +4,7 @@ import {
   PostResponse,
 } from '@gitroom/nestjs-libraries/integrations/social/social.integrations.interface';
 import { MastodonProvider } from '@gitroom/nestjs-libraries/integrations/social/mastodon.provider';
+import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { Integration } from '@prisma/client';
 
@@ -14,6 +15,9 @@ export class MastodonCustomProvider extends MastodonProvider {
   editor = 'normal' as const;
 
   async externalUrl(url: string) {
+    if (!isAllowedUrl(url + '/')) {
+      throw new Error('Invalid or disallowed instance URL');
+    }
     const form = new FormData();
     form.append('client_name', 'Postiz');
     form.append(

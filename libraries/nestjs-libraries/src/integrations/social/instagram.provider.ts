@@ -497,6 +497,11 @@ export class InstagramProvider
     accessToken: string,
     data: { pageId: string; id: string }
   ) {
+    // Validate IDs to prevent path traversal / SSRF
+    const idPattern = /^[a-zA-Z0-9_-]+$/;
+    if (!idPattern.test(data.pageId) || !idPattern.test(data.id)) {
+      throw new Error('Invalid page or account ID');
+    }
     const { access_token, ...all } = await (
       await fetch(
         `https://graph.facebook.com/v20.0/${data.pageId}?fields=access_token,name,picture.type(large)&access_token=${accessToken}`

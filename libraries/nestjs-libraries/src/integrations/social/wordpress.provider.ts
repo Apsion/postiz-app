@@ -4,7 +4,7 @@ import {
   PostResponse,
   SocialProvider,
 } from '@gitroom/nestjs-libraries/integrations/social/social.integrations.interface';
-import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.abstract';
+import { SocialAbstract, isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import dayjs from 'dayjs';
 import { Integration } from '@prisma/client';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
@@ -98,11 +98,15 @@ export class WordpressProvider
       password: string;
     };
     try {
+      const wpBaseUrl = body.domain;
+      if (!isAllowedUrl(wpBaseUrl + '/')) {
+        return 'Invalid or disallowed domain URL';
+      }
       const auth = Buffer.from(`${body.username}:${body.password}`).toString(
         'base64'
       );
       const { id, name, avatar_urls, code } = await (
-        await fetch(`${body.domain}/wp-json/wp/v2/users/me`, {
+        await fetch(`${wpBaseUrl}/wp-json/wp/v2/users/me`, {
           headers: {
             Authorization: `Basic ${auth}`,
           },

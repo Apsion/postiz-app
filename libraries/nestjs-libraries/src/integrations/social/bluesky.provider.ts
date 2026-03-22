@@ -9,6 +9,7 @@ import {
   BadBody,
   RefreshToken,
   SocialAbstract,
+  isAllowedUrl,
 } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import {
   BskyAgent,
@@ -209,6 +210,10 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
   }) {
     const body = JSON.parse(Buffer.from(params.code, 'base64').toString());
 
+    if (!isAllowedUrl(body.service + '/')) {
+      return 'Invalid or disallowed service URL';
+    }
+
     try {
       const agent = new BskyAgent({
         service: body.service,
@@ -244,6 +249,9 @@ export class BlueskyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.fixedDecryption(integration.customInstanceDetails!)
     );
+    if (!isAllowedUrl(body.service + '/')) {
+      throw new BadBody('bluesky', '{}', {} as any, 'Invalid or disallowed service URL');
+    }
     const agent = new BskyAgent({
       service: body.service,
     });
