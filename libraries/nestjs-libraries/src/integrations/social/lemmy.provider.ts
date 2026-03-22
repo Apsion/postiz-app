@@ -5,7 +5,7 @@ import {
   SocialProvider,
 } from '@gitroom/nestjs-libraries/integrations/social/social.integrations.interface';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
-import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.abstract';
+import { SocialAbstract, isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import dayjs from 'dayjs';
 import { Integration } from '@prisma/client';
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
@@ -76,6 +76,10 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
   }) {
     const body = JSON.parse(Buffer.from(params.code, 'base64').toString());
 
+    if (!isAllowedUrl(body.service + '/')) {
+      return 'Invalid or disallowed service URL';
+    }
+
     const load = await fetch(body.service + '/api/v3/user/login', {
       body: JSON.stringify({
         username_or_email: body.identifier,
@@ -124,6 +128,10 @@ export class LemmyProvider extends SocialAbstract implements SocialProvider {
     const body = JSON.parse(
       AuthService.fixedDecryption(integration.customInstanceDetails!)
     );
+
+    if (!isAllowedUrl(body.service + '/')) {
+      throw new Error('Invalid or disallowed service URL');
+    }
 
     const { jwt } = await (
       await fetch(body.service + '/api/v3/user/login', {

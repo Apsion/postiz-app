@@ -109,7 +109,8 @@ export class AuthController {
         register: true,
       });
     } catch (e: any) {
-      response.status(400).send(e.message);
+      console.error('Registration error:', e.message);
+      response.status(400).json({ error: 'Registration failed' });
     }
   }
 
@@ -173,7 +174,8 @@ export class AuthController {
         login: true,
       });
     } catch (e: any) {
-      response.status(400).send(e.message);
+      console.error('Login error:', e.message);
+      response.status(400).json({ error: 'Login failed' });
     }
   }
 

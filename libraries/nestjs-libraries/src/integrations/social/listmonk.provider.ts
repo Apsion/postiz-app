@@ -1,5 +1,5 @@
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
-import { SocialAbstract } from '../social.abstract';
+import { SocialAbstract, isAllowedUrl } from '../social.abstract';
 import {
   AuthTokenDetails,
   PostDetails,
@@ -79,8 +79,10 @@ export class ListmonkProvider extends SocialAbstract implements SocialProvider {
     const body: { url: string; username: string; password: string } =
       JSON.parse(Buffer.from(params.code, 'base64').toString());
 
-    console.log(body);
     try {
+      if (!isAllowedUrl(body.url + '/')) {
+        return 'Invalid or disallowed URL';
+      }
       const basic = Buffer.from(body.username + ':' + body.password).toString(
         'base64'
       );
