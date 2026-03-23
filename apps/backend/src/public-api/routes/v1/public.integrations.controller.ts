@@ -37,7 +37,7 @@ import * as Sentry from '@sentry/nestjs';
 import { socialIntegrationList, IntegrationManager } from '@gitroom/nestjs-libraries/integrations/integration.manager';
 import { getValidationSchemas } from '@gitroom/nestjs-libraries/chat/validation.schemas.helper';
 import { RefreshIntegrationService } from '@gitroom/nestjs-libraries/integrations/refresh.integration.service';
-import { RefreshToken } from '@gitroom/nestjs-libraries/integrations/social.abstract';
+import { RefreshToken, isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { timer } from '@gitroom/helpers/utils/timer';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
 
@@ -80,6 +80,9 @@ export class PublicIntegrationsController {
     @Body() body: UploadDto
   ) {
     Sentry.metrics.count('public_api-request', 1);
+    if (!isAllowedUrl(body.url)) {
+      throw new HttpException({ msg: 'Invalid or disallowed URL' }, 400);
+    }
     const response = await axios.get(body.url, {
       responseType: 'arraybuffer',
     });
