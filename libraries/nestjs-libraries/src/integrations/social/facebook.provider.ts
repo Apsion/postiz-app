@@ -323,7 +323,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
   }
 
   async fetchPageInformation(accessToken: string, data: { page: string }) {
-    const pageId = data.page;
+    const pageId = encodeURIComponent(data.page);
     const {
       id,
       name,

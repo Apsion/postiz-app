@@ -301,9 +301,14 @@ export class GmbProvider extends SocialAbstract implements SocialProvider {
   ) {
     // data.id is the full resource path: accounts/{accountId}/locations/{locationId}
     // data.locationName is the v1 API format: locations/{locationId}
+    // Validate locationName to prevent path traversal
+    const locationName = data.locationName.replace(/[^a-zA-Z0-9_/.-]/g, '');
+    if (locationName.includes('..')) {
+      throw new Error('Invalid location name');
+    }
     // Fetch location details using the v1 API format
     const locationResponse = await fetch(
-      `https://mybusinessbusinessinformation.googleapis.com/v1/${data.locationName}?readMask=name,title,storefrontAddress,metadata`,
+      `https://mybusinessbusinessinformation.googleapis.com/v1/${locationName}?readMask=name,title,storefrontAddress,metadata`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -316,7 +321,7 @@ export class GmbProvider extends SocialAbstract implements SocialProvider {
     let photoUrl = '';
     try {
       const mediaResponse = await fetch(
-        `https://mybusinessbusinessinformation.googleapis.com/v1/${data.locationName}/media`,
+        `https://mybusinessbusinessinformation.googleapis.com/v1/${locationName}/media`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

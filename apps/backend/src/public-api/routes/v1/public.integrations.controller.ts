@@ -28,6 +28,7 @@ import {
 import { VideoDto } from '@gitroom/nestjs-libraries/dtos/videos/video.dto';
 import { VideoFunctionDto } from '@gitroom/nestjs-libraries/dtos/videos/video.function.dto';
 import { UploadDto } from '@gitroom/nestjs-libraries/dtos/media/upload.dto';
+import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { NotificationService } from '@gitroom/nestjs-libraries/database/prisma/notifications/notification.service';
 import { GetNotificationsDto } from '@gitroom/nestjs-libraries/dtos/notifications/get.notifications.dto';
 import axios from 'axios';
@@ -80,6 +81,9 @@ export class PublicIntegrationsController {
     @Body() body: UploadDto
   ) {
     Sentry.metrics.count('public_api-request', 1);
+    if (!isAllowedUrl(body.url)) {
+      throw new HttpException({ msg: 'Invalid or disallowed URL' }, 400);
+    }
     const response = await axios.get(body.url, {
       responseType: 'arraybuffer',
     });
