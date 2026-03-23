@@ -26,6 +26,7 @@ import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
+import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 
 const pump = promisify(pipeline);
 
@@ -177,6 +178,10 @@ export class PublicController {
 
   @Post('/crypto/:path')
   async cryptoPost(@Body() body: any, @Param('path') path: string) {
+    // Validate path to prevent reflected XSS — only allow alphanumeric and hyphens
+    if (!/^[a-zA-Z0-9_-]+$/.test(path)) {
+      return { success: false, error: 'Invalid path' };
+    }
     console.log('cryptoPost', body, path);
     return this._nowpayments.processPayment(path, body);
   }
@@ -187,7 +192,7 @@ export class PublicController {
     @Res() res: Response,
     @Req() req: Request
   ) {
-    if (!url.endsWith('mp4')) {
+    if (!url.endsWith('mp4') || !isAllowedUrl(url)) {
       return res.status(400).send('Invalid video URL');
     }
 

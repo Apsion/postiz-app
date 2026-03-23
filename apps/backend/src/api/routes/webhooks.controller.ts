@@ -18,6 +18,7 @@ import {
   WebhooksDto,
 } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
+import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 
 @ApiTags('Webhooks')
 @Controller('/webhooks')
@@ -56,6 +57,10 @@ export class WebhookController {
 
   @Post('/send')
   async sendWebhook(@Body() body: any, @Query('url') url: string) {
+    if (!isAllowedUrl(url)) {
+      return { send: false, error: 'Invalid or disallowed URL' };
+    }
+
     try {
       await fetch(url, {
         method: 'POST',
