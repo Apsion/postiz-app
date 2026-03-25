@@ -42,7 +42,7 @@ import { useUser } from '@gitroom/frontend/components/layout/user.context';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { groupBy, random, sortBy } from 'lodash';
-import Image from 'next/image';
+import SafeImage from '@gitroom/react/helpers/safe.image';
 import { extend } from 'dayjs';
 import { isUSCitizen } from './helpers/isuscitizen.utils';
 import { useInterval } from '@mantine/hooks';
@@ -908,7 +908,7 @@ export const CalendarColumn: FC<{
                           'relative w-[34px] h-[34px] rounded-[8px] flex justify-center items-center filter transition-all duration-500'
                         )}
                       >
-                        <Image
+                        <SafeImage
                           src={
                             selectedIntegrations.picture || '/no-picture.jpg'
                           }
@@ -924,7 +924,7 @@ export const CalendarColumn: FC<{
                             width={20}
                           />
                         ) : (
-                          <Image
+                          <SafeImage
                             src={`/icons/platforms/${selectedIntegrations.identifier}.png`}
                             className="rounded-[8px] absolute z-10 -bottom-[5px] -end-[5px] border border-fifth"
                             alt={selectedIntegrations.identifier}
@@ -999,11 +999,24 @@ const CalendarItem: FC<{
     <div
       // @ts-ignore
       ref={dragRef}
-      className={clsx('w-full flex h-full flex-1 flex-col group', 'relative')}
+      className={clsx(
+        'w-full flex h-full flex-1 flex-col group',
+        'relative',
+        state === 'ERROR' && 'rounded-[10px] ring-2 ring-red-500'
+      )}
       style={{
         opacity,
       }}
     >
+      {state === 'ERROR' && (
+        <div
+          className="absolute -top-[6px] -left-[6px] z-20 w-[18px] h-[18px] rounded-full bg-red-500 flex items-center justify-center text-white text-[11px] font-bold cursor-pointer"
+          data-tooltip-id="tooltip"
+          data-tooltip-content={post.error || 'An error occurred while publishing this post'}
+        >
+          !
+        </div>
+      )}
       <div
         className={clsx(
           'text-white text-[11px] max-h-[24px] h-[24px] min-h-[24px] w-full rounded-tr-[10px] rounded-tl-[10px] flex items-center justify-center gap-[10px] px-[5px] bg-btnPrimary'
