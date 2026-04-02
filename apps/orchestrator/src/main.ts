@@ -9,9 +9,12 @@ import * as dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 
 async function bootstrap() {
-  // some comment again
-  const app = await NestFactory.createApplicationContext(AppModule);
+  const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
+  const port = process.env.ORCHESTRATOR_PORT || 3002;
+  await app.listen(port);
+  console.log(`Orchestrator health check listening on port ${port}`);
 }
+
 
 bootstrap();

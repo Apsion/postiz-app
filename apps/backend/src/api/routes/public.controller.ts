@@ -26,7 +26,7 @@ import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions/pricing';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
-import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
+import { OnlyURL } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
 
 const pump = promisify(pipeline);
 
@@ -188,11 +188,12 @@ export class PublicController {
 
   @Get('/stream')
   async streamFile(
-    @Query('url') url: string,
+    @Query() query: OnlyURL,
     @Res() res: Response,
     @Req() req: Request
   ) {
-    if (!url.endsWith('mp4') || !isAllowedUrl(url)) {
+    const { url } = query;
+    if (!url.endsWith('mp4')) {
       return res.status(400).send('Invalid video URL');
     }
 
@@ -224,7 +225,6 @@ export class PublicController {
 
     try {
       await pump(Readable.fromWeb(r.body as any), res);
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 }

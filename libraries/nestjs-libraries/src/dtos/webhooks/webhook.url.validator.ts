@@ -68,7 +68,7 @@ export class IsSafeWebhookUrlConstraint implements ValidatorConstraintInterface 
   }
 
   defaultMessage(_args: ValidationArguments): string {
-    return 'Webhook URL must be a public HTTPS URL and must not resolve to localhost, private, loopback, or link-local addresses';
+    return 'URL must be a public HTTPS URL and must not resolve to localhost, private, loopback, or link-local addresses';
   }
 
   private isBlockedIp(ip: string): boolean {
