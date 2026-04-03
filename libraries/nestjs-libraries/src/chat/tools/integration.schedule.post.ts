@@ -31,6 +31,15 @@ export class IntegrationSchedulePostTool implements AgentToolInterface {
   run() {
     return createTool({
       id: 'schedulePostTool',
+      mcp: {
+        annotations: {
+          title: 'Schedule Social Media Post',
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+      },
       description: `
 This tool allows you to schedule a post to a social media platform, based on integrationSchema tool.
 So for example:

@@ -18,6 +18,15 @@ export class VideoFunctionTool implements AgentToolInterface {
     return createTool({
       id: 'videoFunctionTool',
       description: `Sometimes when we want to generate videos we might need to get some additional information like voice_id, etc`,
+      mcp: {
+        annotations: {
+          title: 'Video Function Helper',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
       inputSchema: z.object({
         identifier: z.string(),
         functionName: z.string(),

@@ -26,6 +26,15 @@ export class IntegrationTriggerTool implements AgentToolInterface {
       id: 'triggerTool',
       description: `After using the integrationSchema, we sometimes miss details we can\'t ask from the user, like ids.
       Sometimes this tool requires to user prompt for some settings, like a word to search for. methodName is required [input:callable-tools]`,
+      mcp: {
+        annotations: {
+          title: 'Trigger Integration Tool',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+      },
       inputSchema: z.object({
         integrationId: z.string().describe('The id of the integration'),
         methodName: z

@@ -20,6 +20,15 @@ export class GenerateImageTool implements AgentToolInterface {
                     in case the user specified a platform that requires attachment and attachment was not provided,
                     ask if they want to generate a picture of a video.
       `,
+      mcp: {
+        annotations: {
+          title: 'Generate Image',
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+      },
       inputSchema: z.object({
         prompt: z.string(),
       }),

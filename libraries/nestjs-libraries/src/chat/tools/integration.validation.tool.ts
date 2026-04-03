@@ -22,6 +22,15 @@ export class IntegrationValidationTool implements AgentToolInterface {
          Sometimes we might get a schema back the requires some id, for that, you can get information from 'tools'
          And use the triggerTool function.
         `,
+      mcp: {
+        annotations: {
+          title: 'Get Integration Schema',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
       inputSchema: z.object({
         isPremium: z
           .boolean()

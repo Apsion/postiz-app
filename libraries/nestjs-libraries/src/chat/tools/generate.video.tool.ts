@@ -25,6 +25,15 @@ export class GenerateVideoTool implements AgentToolInterface {
   run() {
     return createTool({
       id: 'generateVideoTool',
+      mcp: {
+        annotations: {
+          title: 'Generate Video',
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+      },
       description: `Generate video to use in a post,
                     in case the user specified a platform that requires attachment and attachment was not provided,
                     ask if they want to generate a picture of a video.
