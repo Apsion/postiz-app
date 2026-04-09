@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -17,6 +18,7 @@ import {
   OnlyURL, UpdateDto, WebhooksDto
 } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
+import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 
 
 @ApiTags('Webhooks')
@@ -56,11 +58,16 @@ export class WebhookController {
 
   @Post('/send')
   async sendWebhook(@Body() body: any, @Query() query: OnlyURL) {
+    if (!(await isSafePublicHttpsUrl(query.url))) {
+      throw new BadRequestException('URL must be a public HTTPS URL');
+    }
+
     try {
       await fetch(query.url, {
         method: 'POST',
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
+        redirect: 'manual',
       });
     } catch (err) {
       /** sent **/
