@@ -12,6 +12,11 @@ on:
 jobs:
   anti-slop:
     runs-on: ubuntu-latest
+    # Skip anti-slop for internal (non-fork) PRs. The action's
+    # exempt-author-association did not reliably skip OWNER drafts in practice
+    # (see Apsion/postiz-app#3 reopen incident 2026-04-10). Fork PRs are still
+    # evaluated, so external spam is still filtered.
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - uses: peakoss/anti-slop@v0
         with:
