@@ -56,6 +56,41 @@ export function isBlockedIp(ip: string): boolean {
   return true;
 }
 
+/**
+ * Synchronous URL guard used as a fast pre-check before the async DNS-based
+ * validation. Rejects non-HTTPS, `localhost`, and literal private/loopback IPs.
+ * Acts as a CodeQL barrier condition for `js/request-forgery` consumers.
+ */
+export function isSyncSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!hostname) return false;
+    if (hostname === 'localhost') return false;
+    if (net.isIP(hostname) && isBlockedIp(hostname)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fully validate a URL for outbound fetches — runs the sync guard first,
+ * then performs DNS resolution and rechecks every resolved address against
+ * the private/loopback/link-local blocklist. This is the single entry point
+ * both `PublicController.streamFile` and `WebhookController.sendWebhook`
+ * must use before making any `fetch()` call.
+ */
+export async function assertSafeOutboundUrl(url: string): Promise<void> {
+  if (!isSyncSafeUrl(url)) {
+    throw new Error('URL must be a public HTTPS URL');
+  }
+  if (!(await isSafePublicHttpsUrl(url))) {
+    throw new Error('URL must be a public HTTPS URL');
+  }
+}
+
 export async function isSafePublicHttpsUrl(value: unknown): Promise<boolean> {
   if (typeof value !== 'string' || !value.trim()) {
     return false;

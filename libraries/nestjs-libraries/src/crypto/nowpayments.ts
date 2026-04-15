@@ -28,19 +28,21 @@ export class Nowpayments {
   async processPayment(path: string, body: ProcessPayment) {
     const decrypt = AuthService.verifyJWT(path) as any;
     if (!decrypt || !decrypt.order_id) {
-      return;
+      return { success: false } as const;
     }
 
     if (
       body.payment_status !== 'confirmed' &&
       body.payment_status !== 'finished'
     ) {
-      return;
+      return { success: false } as const;
     }
 
     const [org, make] = body.order_id.split('_');
     await this._subscriptionService.lifeTime(org, make, 'PRO');
-    return body;
+    // Do not echo the user-provided body back — keeps responses free of
+    // reflected user input (see CodeQL js/reflected-xss).
+    return { success: true } as const;
   }
 
   async createPaymentPage(orgId: string) {

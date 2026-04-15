@@ -26,8 +26,7 @@ import { pricing } from '@gitroom/nestjs-libraries/database/prisma/subscriptions
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 import { OnlyURL } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
-import { isSafePublicHttpsUrl, isBlockedIp } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
-import net from 'node:net';
+import { assertSafeOutboundUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 
 const pump = promisify(pipeline);
 
@@ -41,24 +40,6 @@ function sanitizePath(input: string): string {
     throw new Error('Invalid path');
   }
   return input;
-}
-
-/**
- * Synchronous URL guard that CodeQL can trace as a barrier condition.
- * Validates protocol is HTTPS and hostname is not a blocked literal IP.
- * The full async DNS-resolution check happens via isSafePublicHttpsUrl.
- */
-function isSyncSafeUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') return false;
-    const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-    if (hostname === 'localhost') return false;
-    if (net.isIP(hostname) && isBlockedIp(hostname)) return false;
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 @ApiTags('Public')
@@ -194,7 +175,8 @@ export class PublicController {
     } catch {
       return { success: false, error: 'Invalid path' };
     }
-    console.log('cryptoPost', body, safePath);
+    // `processPayment` intentionally returns a fixed-shape `{success}` object
+    // so no user-supplied body is ever reflected back to the caller.
     return this._nowpayments.processPayment(safePath, body);
   }
 
@@ -221,12 +203,9 @@ export class PublicController {
     let currentUrl = url;
     let r: globalThis.Response | undefined;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      // Synchronous guard CodeQL can trace as a barrier condition
-      if (!isSyncSafeUrl(currentUrl)) {
-        return res.status(400).send('Blocked URL');
-      }
-      // Full async validation (DNS resolution, private IP blocking)
-      if (!(await isSafePublicHttpsUrl(currentUrl))) {
+      try {
+        await assertSafeOutboundUrl(currentUrl);
+      } catch {
         return res.status(400).send('Blocked URL');
       }
 
