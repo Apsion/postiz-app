@@ -394,6 +394,9 @@ importers:
       fast-xml-parser:
         specifier: ^4.5.1
         version: 4.5.4
+      file-type:
+        specifier: ^16.5.4
+        version: 16.5.4
       google-auth-library:
         specifier: ^9.11.0
         version: 9.15.1
