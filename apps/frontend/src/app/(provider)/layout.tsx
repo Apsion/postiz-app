@@ -1,3 +1,5 @@
+import { MantineWrapper } from '@gitroom/react/helpers/mantine.wrapper';
+
 export const dynamic = 'force-dynamic';
 import '../global.scss';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -62,10 +64,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               : []
           }
         >
-          <LayoutContext>
-            <UtmSaver />
-            {children}
-          </LayoutContext>
+          <MantineWrapper>
+            <LayoutContext>
+              <UtmSaver />
+              {children}
+            </LayoutContext>
+          </MantineWrapper>
         </VariableContextComponent>
       </body>
     </html>

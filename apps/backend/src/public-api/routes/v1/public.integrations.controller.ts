@@ -34,8 +34,8 @@ import { UploadDto } from '@gitroom/nestjs-libraries/dtos/media/upload.dto';
 import { isAllowedUrl } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { NotificationService } from '@gitroom/nestjs-libraries/database/prisma/notifications/notification.service';
 import { GetNotificationsDto } from '@gitroom/nestjs-libraries/dtos/notifications/get.notifications.dto';
-import axios from 'axios';
 import { Readable } from 'stream';
+import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { fromBuffer } = require('file-type');
 
@@ -100,11 +100,14 @@ export class PublicIntegrationsController {
     if (!isAllowedUrl(body.url)) {
       throw new HttpException({ msg: 'Invalid or disallowed URL' }, 400);
     }
-    const response = await axios.get(body.url, {
-      responseType: 'arraybuffer',
+    const response = await fetch(body.url, {
+      // @ts-ignore — undici option, not in lib.dom fetch types
+      dispatcher: ssrfSafeDispatcher,
     });
-
-    const buffer = Buffer.from(response.data);
+    if (!response.ok) {
+      throw new HttpException({ msg: 'Failed to fetch URL' }, 400);
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
     const detected = await fromBuffer(buffer);
     if (!detected || !PUBLIC_API_ALLOWED_MIME.has(detected.mime)) {
       throw new HttpException({ msg: 'Unsupported file type.' }, 400);
